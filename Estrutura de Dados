@@ -1,0 +1,70 @@
+# %%
+import xml.etree.ElementTree as ET
+
+# Carregar o arquivo XML
+tree = ET.parse('Projeto.pmp')
+root = tree.getroot()
+
+# Extrair os dados desejados
+database = root.find('Database')
+table = database.find('Table')
+
+# Abrir o arquivo para escrita
+with open('saida.txt', 'w') as arquivo:
+    # Imprime os dados do Banco de Dados
+    db_name = database.get('DBName')
+    db_type = database.get('DBType')
+    db_Host = database.get('DBHost')
+    db_Port = database.get('DBPort')
+    db_Usuario = database.get('DBUID')
+    db_Password = database.get('DBPwd')
+    # Redirecionar a saída para o arquivo
+    print(f"Nome do Banco de Dados: {db_name}", file=arquivo)
+    print(f"Tipo: {db_type}", file=arquivo)
+    print(f"Host: {db_Host}", file=arquivo)
+    print(f"Porta: {db_Port}", file=arquivo)
+    print(f"Usuario: {db_Usuario}", file=arquivo)
+    print(f"Senha: {db_Password}", file=arquivo)
+
+    # Imprime os dados da Tabela
+    tables = database.findall('Table')
+    for table in tables:
+        tbl_name = table.get('TblName')
+        tbl_type = table.get('TblType')
+        tbl_pk = ''
+        
+        print("==========================================", file=arquivo)
+        print(f"Tipo da Objeto: {tbl_type}\n", file=arquivo)
+
+        if tbl_type == 'TABLE':
+            print(f"CREATE TABLE `{tbl_name}`(", file=arquivo)
+            fields = table.findall('Field')
+            for field in fields:
+                fld_name = field.get('FldName')
+                fld_tipo = field.get('FldTypeName')
+                fld_size = field.get('FldSize')
+                fld_primaryKey = field.get('FldIsPrimaryKey')
+
+                if field.get('FldIsPrimaryKey') == '1':
+                    if tbl_pk == '':
+                        tbl_pk = 'PRIMARY KEY (`' + fld_name + '`),'
+                    else:
+                        tbl_pk = tbl_pk + '\n\tPRIMARY KEY (`' + fld_name + '`),'
+
+                if field.get('FldAutoIncrement') == '1':
+                    fld_autoIncrement = 'AUTO_INCREMENT'
+                else:
+                    fld_autoIncrement = ''
+
+                print(f"\t`{fld_name}` {fld_tipo}({fld_size}) {fld_autoIncrement},", file=arquivo)
+            print(tbl_pk[:-1], file=arquivo)
+            print(");", file=arquivo)
+        elif tbl_type == 'VIEW':
+            print(f"CREATE VIEW `{tbl_name}` AS", file=arquivo)
+            print(f"SELECT * FROM `{table.get('TblSQL')}`;", file=arquivo)
+        else:
+            print('Tipo não suportado', file=arquivo)
+
+    # Redirecionar outras saídas para o arquivo
+    print("==========================================", file=arquivo)
+    print(f"Tipo da Objeto: {tbl_type}\n", file=arquivo)
